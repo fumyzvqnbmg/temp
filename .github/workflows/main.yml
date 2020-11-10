@@ -1,51 +1,26 @@
-name: CI
+name: github pages
+
 on:
-  # Only run when merging to master, or open/synchronize/reopen a PR.
   push:
     branches:
       - master
-  pull_request:
 
 jobs:
-  test:
-    name: Test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        build: [stable, beta, nightly, macos, windows, msrv]
-        include:
-          - build: stable
-            os: ubuntu-latest
-            rust: stable
-          - build: beta
-            os: ubuntu-latest
-            rust: beta
-          - build: nightly
-            os: ubuntu-latest
-            rust: nightly
-          - build: macos
-            os: macos-latest
-            rust: stable
-          - build: windows
-            os: windows-latest
-            rust: stable
-          - build: msrv
-            os: ubuntu-latest
-            rust: 1.39.0
+  deploy:
+    runs-on: ubuntu-18.04
     steps:
-    - uses: actions/checkout@master
-    - name: Install Rust
-      run: bash ci/install-rust.sh ${{ matrix.rust }}
-    - name: Build and run tests
-      run: cargo test
-    - name: Test no default
-      run: cargo test --no-default-features
+      - uses: actions/checkout@v2
 
-  rustfmt:
-    name: Rustfmt
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@master
-    - name: Install Rust
-      run: rustup update stable && rustup default stable && rustup component add rustfmt
-    - run: cargo fmt -- --check
+      - name: Setup mdBook
+        uses: peaceiris/actions-mdbook@v1
+        with:
+          mdbook-version: '0.4.1'
+          # mdbook-version: 'latest'
+
+      - run: mdbook build
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./book
